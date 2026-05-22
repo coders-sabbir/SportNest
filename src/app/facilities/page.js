@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   Search, SlidersHorizontal, ChevronDown, MapPin, 
-  Users, Calendar, Star, TrendingUp, ArrowRight, Loader2
+  Users, Calendar, Star, TrendingUp, ArrowRight, Loader2, X
 } from "lucide-react";
 import axios from "axios";
 
@@ -12,9 +12,13 @@ export default function AllFacilitiesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [facilities, setFacilities] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // ১. নতুন স্টেট: কোন বাটনটিতে ক্লিক করা হয়েছে তার লোডিং ট্র্যাক করার জন্য
   const [processingId, setProcessingId] = useState(null);
+
+  // Modal & Booking States
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedFacility, setSelectedFacility] = useState(null);
+  const [bookingDate, setBookingDate] = useState("");
+  const [selectedSlot, setSelectedSlot] = useState("");
 
   useEffect(() => {
     const API_URL = "https://sport-nest-server-a4sz.vercel.app/facilities";
@@ -30,29 +34,46 @@ export default function AllFacilitiesPage() {
       });
   }, []);
 
-  // ২. নতুন ফাংশন: ডাটাবেসে বুকিং সেভ করার জন্য (ঠিক এখানেই বসাতে হয়)
-  const handleBookNow = async (facility) => {
-    setProcessingId(facility._id); // লোডিং শুরু
+  const handleOpenModal = (facility) => {
+    setSelectedFacility(facility);
+    setBookingDate(""); 
+    setSelectedSlot("");
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedFacility(null);
+  };
+
+  const confirmBooking = async () => {
+    if (!bookingDate || !selectedSlot) {
+      alert("Please select both a date and a time slot!");
+      return;
+    }
+
+    setProcessingId(selectedFacility._id); 
     
     const bookingInfo = {
-      facilityId: facility._id,
-      facilityName: facility.name || facility.facilityName,
-      userEmail: "user@example.com", // ডাইনামিক ইউজারের ইমেইল
-      bookingDate: "2026-05-25", 
-      slot: "10AM-11AM", 
-      price: facility.price_per_hour || facility.price
+      facilityId: selectedFacility._id,
+      facilityName: selectedFacility.name || selectedFacility.facilityName,
+      userEmail: "user@example.com", 
+      bookingDate: bookingDate, 
+      slot: selectedSlot, 
+      price: selectedFacility.price_per_hour || selectedFacility.price
     };
 
     try {
       const response = await axios.post("https://sport-nest-server-a4sz.vercel.app/bookings", bookingInfo);
       if (response.status === 201) {
-        alert(`Booking Successful for ${facility.name}! 🎉 Go to My Bookings page.`);
+        alert(`Booking Successful for ${selectedFacility.name}! Date: ${bookingDate}, Slot: ${selectedSlot}`);
+        handleCloseModal(); 
       }
     } catch (error) {
       console.error("Booking Error:", error);
       alert("Failed to book. Try again!");
     } finally {
-      setProcessingId(null); // লোডিং শেষ
+      setProcessingId(null); 
     }
   };
 
@@ -86,8 +107,6 @@ export default function AllFacilitiesPage() {
         {/* Search & Filter Section */}
         <div className="sticky top-24 z-40 bg-[#111827]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 mb-12 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.5)]">
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
-            
-            {/* Search Input */}
             <div className="relative w-full lg:w-1/3 group">
               <Search className="absolute left-4 top-3.5 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
               <input 
@@ -99,7 +118,6 @@ export default function AllFacilitiesPage() {
               />
             </div>
 
-            {/* Dropdown Filters */}
             <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-4">
               <div className="relative w-full sm:w-40 group cursor-pointer">
                 <select className="w-full appearance-none bg-[#0F172A]/50 border border-white/10 rounded-xl py-3 pl-4 pr-10 text-gray-300 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none cursor-pointer">
@@ -110,11 +128,9 @@ export default function AllFacilitiesPage() {
                 <ChevronDown className="absolute right-4 top-3.5 text-gray-500 pointer-events-none" size={18} />
               </div>
             </div>
-            
           </div>
         </div>
 
-        {/*Loading State & Facilities Grid */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
              <Loader2 size={40} className="text-primary animate-spin" />
@@ -134,13 +150,6 @@ export default function AllFacilitiesPage() {
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-card-bg via-transparent to-transparent opacity-80"></div>
-                  
-                  {/* Badges */}
-                  <div className="absolute top-4 left-4 flex gap-2">
-                    <span className="bg-main-bg/80 backdrop-blur-md border border-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-lg">
-                      {facility.facility_type}
-                    </span>
-                  </div>
                 </div>
 
                 {/* Card Content Area */}
@@ -152,18 +161,6 @@ export default function AllFacilitiesPage() {
                   <div className="flex items-center gap-2 text-secondary-text mb-5">
                     <MapPin size={16} className="text-gray-500" />
                     <span className="text-sm">{facility.location}</span>
-                  </div>
-
-                  {/* Info Grid */}
-                  <div className="grid grid-cols-2 gap-4 mb-6 border-y border-white/5 py-4">
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Users size={16} className="text-primary/70" />
-                      <span className="text-sm font-medium">{facility.capacity} Persons</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-300">
-                      <Calendar size={16} className="text-primary/70" />
-                      <span className="text-sm font-medium">{facility.available_slots?.length || 0} Slots Left</span>
-                    </div>
                   </div>
 
                   {/* Footer: Price & Buttons */}
@@ -181,25 +178,17 @@ export default function AllFacilitiesPage() {
                     <div className="flex items-center gap-3">
                       <Link 
                         href={`/facilities/${facility._id}`}
-                        className="flex-1 text-center bg-white/5 text-white border border-white/10 hover:bg-white/10 font-bold text-sm px-4 py-3 rounded-xl transition-all duration-300 outline-none focus:outline-none"
+                        className="flex-1 text-center bg-white/5 text-white border border-white/10 hover:bg-white/10 font-bold text-sm px-4 py-3 rounded-xl transition-all duration-300 outline-none"
                       >
                         Details
                       </Link>
                       
-                      {/* ৩. নতুন আপডেট করা Book Now বাটন */}
                       <button 
                         type="button"
-                        onClick={() => handleBookNow(facility)}
-                        disabled={processingId === facility._id}
-                        className="flex-[2] flex justify-center items-center gap-2 text-center bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-main-bg hover:shadow-[0_0_20px_rgba(163,255,18,0.3)] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-sm px-4 py-3 rounded-xl transition-all duration-300 outline-none focus:outline-none"
+                        onClick={() => handleOpenModal(facility)}
+                        className="flex-[2] text-center bg-primary/10 text-primary border border-primary/20 hover:bg-primary hover:text-main-bg hover:shadow-[0_0_20px_rgba(163,255,18,0.3)] font-bold text-sm px-4 py-3 rounded-xl transition-all duration-300 outline-none"
                       >
-                        {processingId === facility._id ? (
-                          <>
-                            <Loader2 size={16} className="animate-spin" /> Booking...
-                          </>
-                        ) : (
-                          "Book Now"
-                        )}
+                        Book Now
                       </button>
                     </div>
                   </div>
@@ -209,6 +198,79 @@ export default function AllFacilitiesPage() {
           </div>
         )}
       </div>
+
+// Modal for Booking
+      {isModalOpen && selectedFacility && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-[#FFFFFF] w-full max-w-md rounded-2xl p-6 relative shadow-2xl transform transition-all">
+            
+            <button 
+              onClick={handleCloseModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors outline-none"
+            >
+              <X size={24} />
+            </button>
+
+            <div className="mb-6">
+              <h2 className="text-2xl font-black text-[#0B47B3] mb-1">Schedule Booking</h2>
+              <p className="text-gray-500 text-sm font-medium">{selectedFacility.name}</p>
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-sm font-bold text-gray-700 mb-2">Select Date</label>
+              <input 
+                type="date" 
+                value={bookingDate}
+                onChange={(e) => setBookingDate(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 text-gray-800 focus:border-[#0B47B3] focus:ring-1 focus:ring-[#0B47B3] outline-none transition-all"
+                min={new Date().toISOString().split('T')[0]} 
+              />
+            </div>
+
+            <div className="mb-8">
+              <label className="block text-sm font-bold text-gray-700 mb-2">Available Time Slots</label>
+              <div className="grid grid-cols-2 gap-3">
+                {selectedFacility?.available_slots && selectedFacility.available_slots.length > 0 ? (
+                  selectedFacility.available_slots.map((slot, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => setSelectedSlot(slot)}
+                      className={`py-2 px-3 rounded-xl text-sm font-bold border transition-all outline-none ${
+                        selectedSlot === slot 
+                          ? "bg-[#0B47B3] border-[#0B47B3] text-white shadow-md" 
+                          : "bg-white border-gray-200 text-gray-600 hover:border-[#0B47B3]/50 hover:text-[#0B47B3]"
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  ))
+                ) : (
+                  <div className="col-span-2 bg-red-50 border border-red-100 text-red-500 text-sm font-semibold p-3 rounded-xl text-center">
+                    No slots available right now.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <button 
+              onClick={confirmBooking}
+              disabled={processingId !== null || !selectedFacility?.available_slots?.length}
+              className="w-full bg-[#0B47B3] hover:bg-[#08368b] text-white font-bold py-3.5 rounded-xl transition-colors flex justify-center items-center gap-2 outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {processingId !== null ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" /> Confirming...
+                </>
+              ) : (
+                `Confirm Booking ($${selectedFacility.price_per_hour || selectedFacility.price})`
+              )}
+            </button>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
