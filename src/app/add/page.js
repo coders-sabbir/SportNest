@@ -3,8 +3,13 @@
 import { useState } from "react";
 import { 
   UploadCloud, MapPin, DollarSign, Users, Clock, 
-  Mail, FileText, Image as ImageIcon, Star, Settings, CheckCircle2, X, Eye 
+  Mail, FileText, Image as ImageIcon, Star, Settings, CheckCircle2, X, Eye, Loader2 
 } from "lucide-react";
+import axios from "axios";
+
+// ImgBB API Key
+const image_hosting_key = "YOUR_IMGBB_API_KEY_HERE"; 
+const image_hosting_api = `https://api.imgbb.com/1/upload?key=${image_hosting_key}`;
 
 export default function AddFacilityPage() {
   // Form States for Live Preview
@@ -20,6 +25,7 @@ export default function AddFacilityPage() {
   });
 
   const [previewImage, setPreviewImage] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const ownerEmail = "admin@email.com";
 
   const handleInputChange = (e) => {
@@ -40,6 +46,55 @@ export default function AddFacilityPage() {
       name: "", type: "", location: "", price: "", capacity: "", slots: "", description: "", image: null
     });
     setPreviewImage(null);
+  };
+
+// form submission handler
+  const handlePublishFacility = async (e) => {
+    e.preventDefault();
+
+    // basic validation to ensure required fields are filled and image is uploaded
+    if (!formData.name || !formData.type || !formData.price || !formData.image) {
+      alert("Please fill up all the required fields and upload an image.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {      
+      // Step 1: Image Upload to ImgBB
+      const imageFile = new FormData();
+      imageFile.append("image", formData.image);
+      
+      const imgRes = await axios.post(image_hosting_api, imageFile);
+      const imageUrl = imgRes.data.data.display_url;
+
+     // Step 2: Prepare Facility Data
+      const newFacilityData = {
+        name: formData.name,
+        facility_type: formData.type, 
+        location: formData.location,
+        price_per_hour: parseFloat(formData.price),
+        capacity: parseInt(formData.capacity),
+        available_slots: formData.slots.split(",").map(slot => slot.trim()).filter(Boolean), 
+        description: formData.description,
+        image: imageUrl,
+        rating: 5.0, 
+        booking_count: 0 
+      };
+
+      // Step 3: Submit Facility Data to Backend
+      const response = await axios.post("https://sport-nest-server-a4sz.vercel.app/facilities", newFacilityData);
+      
+      if (response.status === 200 || response.status === 201) {
+        alert("Facility Published Successfully! Your listing is now live on SportNest.");
+        handleReset(); 
+      }
+    } catch (error) {
+      console.error("Error publishing facility:", error);
+      alert("Failed to publish facility. Make sure your ImgBB key is valid!");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,11 +127,11 @@ export default function AddFacilityPage() {
               {/* Form Card Glow */}
               <div className="absolute -inset-[1px] bg-gradient-to-b from-[#A3FF12]/20 to-transparent rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
 
-              <form className="relative z-10 space-y-6" onSubmit={(e) => e.preventDefault()}>
+              <form className="relative z-10 space-y-6" onSubmit={handlePublishFacility}>
                 
                 {/* Image Upload Area */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-400 ml-1">Facility Image</label>
+                  <label className="text-sm font-medium text-gray-400 ml-1">Facility Image *</label>
                   <div className="relative w-full h-40 border-2 border-dashed border-white/10 rounded-2xl bg-[#0F172A]/50 hover:bg-[#0F172A]/80 hover:border-[#A3FF12]/50 transition-all group/upload flex flex-col items-center justify-center cursor-pointer overflow-hidden">
                     <input 
                       type="file" 
@@ -106,17 +161,17 @@ export default function AddFacilityPage() {
                 {/* Name and Type */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-400 ml-1">Facility Name</label>
+                    <label className="text-sm font-medium text-gray-400 ml-1">Facility Name *</label>
                     <input 
-                      type="text" name="name" value={formData.name} onChange={handleInputChange}
+                      type="text" name="name" value={formData.name} onChange={handleInputChange} required
                       placeholder="e.g. Elite Football Turf"
                       className="w-full bg-[#0F172A]/80 border border-white/10 rounded-xl py-3.5 px-4 text-white focus:border-[#A3FF12]/50 focus:ring-1 focus:ring-[#A3FF12]/50 transition-all outline-none"
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-400 ml-1">Sport Type</label>
+                    <label className="text-sm font-medium text-gray-400 ml-1">Sport Type *</label>
                     <select 
-                      name="type" value={formData.type} onChange={handleInputChange}
+                      name="type" value={formData.type} onChange={handleInputChange} required
                       className="w-full appearance-none bg-[#0F172A]/80 border border-white/10 rounded-xl py-3.5 px-4 text-gray-300 focus:border-[#A3FF12]/50 focus:ring-1 focus:ring-[#A3FF12]/50 transition-all outline-none cursor-pointer"
                     >
                       <option value="" disabled>Select sport</option>
@@ -143,11 +198,11 @@ export default function AddFacilityPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-gray-400 ml-1">Price Per Hour ($)</label>
+                    <label className="text-sm font-medium text-gray-400 ml-1">Price Per Hour ($) *</label>
                     <div className="relative group/input">
                       <DollarSign className="absolute left-4 top-3.5 text-gray-500 group-focus-within/input:text-[#A3FF12] transition-colors" size={18} />
                       <input 
-                        type="number" name="price" value={formData.price} onChange={handleInputChange}
+                        type="number" name="price" value={formData.price} onChange={handleInputChange} required
                         placeholder="0.00"
                         className="w-full bg-[#0F172A]/80 border border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-white focus:border-[#A3FF12]/50 focus:ring-1 focus:ring-[#A3FF12]/50 transition-all outline-none"
                       />
@@ -174,7 +229,7 @@ export default function AddFacilityPage() {
                       <Clock className="absolute left-4 top-3.5 text-gray-500 group-focus-within/input:text-[#A3FF12] transition-colors" size={18} />
                       <input 
                         type="text" name="slots" value={formData.slots} onChange={handleInputChange}
-                        placeholder="e.g. 8AM-10PM"
+                        placeholder="e.g. 10 AM, 11 AM, 4 PM"
                         className="w-full bg-[#0F172A]/80 border border-white/10 rounded-xl py-3.5 pl-11 pr-4 text-white focus:border-[#A3FF12]/50 focus:ring-1 focus:ring-[#A3FF12]/50 transition-all outline-none"
                       />
                     </div>
@@ -209,10 +264,23 @@ export default function AddFacilityPage() {
                 
                 {/* Form Buttons */}
                 <div className="flex flex-col sm:flex-row items-center gap-4 pt-4 border-t border-white/10 mt-6">
-                  <button type="submit" className="w-full sm:w-2/3 bg-[#A3FF12] text-[#0F172A] font-bold py-4 rounded-xl hover:bg-[#8ee60e] shadow-[0_0_20px_rgba(163,255,18,0.3)] transition-all transform active:scale-95 flex items-center justify-center gap-2 outline-none">
-                    Publish Facility <CheckCircle2 size={18} />
+                  <button 
+                    type="submit" 
+                    disabled={isSubmitting}
+                    className="w-full sm:w-2/3 bg-[#A3FF12] text-[#0F172A] font-bold py-4 rounded-xl hover:bg-[#8ee60e] shadow-[0_0_20px_rgba(163,255,18,0.3)] transition-all transform active:scale-95 flex items-center justify-center gap-2 outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <><Loader2 size={18} className="animate-spin" /> Publishing...</>
+                    ) : (
+                      <>Publish Facility <CheckCircle2 size={18} /></>
+                    )}
                   </button>
-                  <button type="button" onClick={handleReset} className="w-full sm:w-1/3 bg-white/5 border border-white/10 text-white font-semibold py-4 rounded-xl hover:bg-white/10 hover:text-red-400 transition-all flex items-center justify-center gap-2 outline-none">
+                  <button 
+                    type="button" 
+                    onClick={handleReset} 
+                    disabled={isSubmitting}
+                    className="w-full sm:w-1/3 bg-white/5 border border-white/10 text-white font-semibold py-4 rounded-xl hover:bg-white/10 hover:text-red-400 transition-all flex items-center justify-center gap-2 outline-none"
+                  >
                     <X size={18} /> Reset
                   </button>
                 </div>
@@ -272,7 +340,7 @@ export default function AddFacilityPage() {
                       <Users size={16} className="text-gray-500" /> {formData.capacity ? `Up to ${formData.capacity}` : "Capacity"}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-400 w-[45%]">
-                      <Clock size={16} className="text-gray-500" /> {formData.slots || "Time Slots"}
+                      <Clock size={16} className="text-gray-500" /> {formData.slots ? "Custom Slots" : "Time Slots"}
                     </div>
                   </div>
 
