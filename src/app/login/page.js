@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Globe } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (event) => {
@@ -29,6 +30,21 @@ export default function LoginPage() {
 
     router.push("/");
     router.refresh();
+  };
+
+  const handleGoogleSignIn = async () => {
+    setError("");
+    setIsGoogleSubmitting(true);
+
+    const { error: googleError } = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/",
+    });
+
+    if (googleError) {
+      setError(googleError.message || "Google sign in is not configured yet.");
+      setIsGoogleSubmitting(false);
+    }
   };
 
   return (
@@ -60,6 +76,22 @@ export default function LoginPage() {
             </div>
             <h1 className="text-4xl font-bold text-white mb-2">Login to SportNest</h1>
             <p className="text-secondary-text">Enter your credentials to access your dashboard.</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isSubmitting || isGoogleSubmitting}
+            className="mb-6 flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-card-bg py-3.5 font-bold text-white transition-all hover:border-primary/40 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            <Globe size={18} />
+            {isGoogleSubmitting ? "Connecting..." : "Sign in with Google"}
+          </button>
+
+          <div className="mb-6 flex items-center gap-4">
+            <span className="h-px flex-1 bg-white/10"></span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-gray-500">or</span>
+            <span className="h-px flex-1 bg-white/10"></span>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
@@ -107,7 +139,7 @@ export default function LoginPage() {
 
             {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-300">{error}</p>}
 
-            <button disabled={isSubmitting} className="w-full bg-primary text-main-bg font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-[0_0_20px_rgba(163,255,18,0.2)] transition-all transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-70">
+            <button disabled={isSubmitting || isGoogleSubmitting} className="w-full bg-primary text-main-bg font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-[0_0_20px_rgba(163,255,18,0.2)] transition-all transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-70">
               {isSubmitting ? "Signing in..." : "Login to Account"}
             </button>
 

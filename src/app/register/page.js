@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { User, Mail, Image as ImageIcon, Lock, Eye, EyeOff, CheckCircle2, Circle } from "lucide-react";
+import { User, Mail, Image as ImageIcon, Lock, Eye, EyeOff, CheckCircle2, Circle, Globe } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 export default function RegisterPage() {
@@ -14,6 +14,7 @@ export default function RegisterPage() {
   const [image, setImage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const router = useRouter();
 
   const validations = {
@@ -47,6 +48,22 @@ export default function RegisterPage() {
 
     router.push("/");
     router.refresh();
+  };
+
+  const handleGoogleSignUp = async () => {
+    setError("");
+    setIsGoogleSubmitting(true);
+
+    const { error: googleError } = await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/",
+      requestSignUp: true,
+    });
+
+    if (googleError) {
+      setError(googleError.message || "Google sign up is not configured yet.");
+      setIsGoogleSubmitting(false);
+    }
   };
 
   return (
@@ -93,6 +110,22 @@ export default function RegisterPage() {
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Register to SportNest</h1>
             <p className="text-secondary-text">Fill in your details to get started.</p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignUp}
+            disabled={isSubmitting || isGoogleSubmitting}
+            className="mb-5 flex w-full items-center justify-center gap-3 rounded-xl border border-white/10 bg-card-bg py-3.5 font-bold text-white transition-all hover:border-primary/40 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            <Globe size={18} />
+            {isGoogleSubmitting ? "Connecting..." : "Sign up with Google"}
+          </button>
+
+          <div className="mb-5 flex items-center gap-4">
+            <span className="h-px flex-1 bg-white/10"></span>
+            <span className="text-xs font-semibold uppercase tracking-widest text-gray-500">or</span>
+            <span className="h-px flex-1 bg-white/10"></span>
           </div>
 
           <form className="space-y-5" onSubmit={handleSubmit}>
@@ -187,8 +220,8 @@ export default function RegisterPage() {
 
             <button 
               type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-primary text-main-bg font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-[0_0_20px_rgba(163,255,18,0.2)] transition-all transform active:scale-95 outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
+              disabled={isSubmitting || isGoogleSubmitting}
+              className="w-full bg-primary text-main-bg font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-[0_0_20px_rgba(163,255,18,0.2)] transition-all transform active:scale-95 outline-none focus:outline-none [-webkit-tap-highlight-color:transparent] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {isSubmitting ? "Creating account..." : "Create Account"}
             </button>
