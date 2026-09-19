@@ -2,16 +2,51 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { User, Mail, Image as ImageIcon, Lock, Eye, EyeOff, CheckCircle2, Circle } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [image, setImage] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
 
   const validations = {
-    length: password.length >= 6,
+    length: password.length >= 8,
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+
+    if (!validations.length || !validations.uppercase || !validations.lowercase) {
+      setError("Please meet all password requirements.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error: signUpError } = await authClient.signUp.email({
+      name,
+      email,
+      password,
+      image: image || undefined,
+    });
+
+    if (signUpError) {
+      setError(signUpError.message || "Unable to create your account. Please try again.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
   };
 
   return (
@@ -60,7 +95,7 @@ export default function RegisterPage() {
             <p className="text-secondary-text">Fill in your details to get started.</p>
           </div>
 
-          <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-5" onSubmit={handleSubmit}>
             
             {/* Full Name Input */}
             <div className="space-y-1.5">
@@ -69,6 +104,8 @@ export default function RegisterPage() {
                 <User className="absolute left-4 top-3.5 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
                 <input 
                   type="text" 
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
                   className="w-full bg-card-bg border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-600 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
                   placeholder="Mr. X"
                   required
@@ -83,6 +120,8 @@ export default function RegisterPage() {
                 <Mail className="absolute left-4 top-3.5 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
                 <input 
                   type="email" 
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="w-full bg-card-bg border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-600 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
                   placeholder="name@email.com"
                   required
@@ -97,9 +136,10 @@ export default function RegisterPage() {
                 <ImageIcon className="absolute left-4 top-3.5 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
                 <input 
                   type="url" 
+                  value={image}
+                  onChange={(event) => setImage(event.target.value)}
                   className="w-full bg-card-bg border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-600 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
                   placeholder="https://example.com/photo.jpg"
-                  required
                 />
               </div>
             </div>
@@ -131,7 +171,7 @@ export default function RegisterPage() {
             <div className="flex flex-col gap-2 pt-1 pb-2">
               <div className={`flex items-center gap-2 text-xs transition-colors duration-300 ${validations.length ? 'text-primary' : 'text-gray-500'}`}>
                 {validations.length ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-                <span>At least 6 characters</span>
+                <span>At least 8 characters</span>
               </div>
               <div className={`flex items-center gap-2 text-xs transition-colors duration-300 ${validations.uppercase ? 'text-primary' : 'text-gray-500'}`}>
                 {validations.uppercase ? <CheckCircle2 size={14} /> : <Circle size={14} />}
@@ -143,12 +183,14 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* Register Button */}
+            {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-300">{error}</p>}
+
             <button 
               type="submit"
+              disabled={isSubmitting}
               className="w-full bg-primary text-main-bg font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-[0_0_20px_rgba(163,255,18,0.2)] transition-all transform active:scale-95 outline-none focus:outline-none [-webkit-tap-highlight-color:transparent]"
             >
-              Create Account
+              {isSubmitting ? "Creating account..." : "Create Account"}
             </button>
 
             {/* Login Redirect */}

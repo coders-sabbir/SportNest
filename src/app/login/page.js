@@ -2,10 +2,34 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mail, Lock, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    const { error: signInError } = await authClient.signIn.email({ email, password });
+
+    if (signInError) {
+      setError(signInError.message || "Unable to sign in. Please try again.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    router.push("/");
+    router.refresh();
+  };
 
   return (
     <div className="min-h-screen w-full flex bg-main-bg overflow-hidden">
@@ -38,7 +62,7 @@ export default function LoginPage() {
             <p className="text-secondary-text">Enter your credentials to access your dashboard.</p>
           </div>
 
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Email Input */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-400 ml-1">Email Address</label>
@@ -46,8 +70,11 @@ export default function LoginPage() {
                 <Mail className="absolute left-4 top-3.5 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
                 <input 
                   type="email" 
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="w-full bg-card-bg border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white placeholder-gray-600 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
                   placeholder="name@email.com"
+                  required
                 />
               </div>
             </div>
@@ -62,8 +89,11 @@ export default function LoginPage() {
                 <Lock className="absolute left-4 top-3.5 text-gray-500 group-focus-within:text-primary transition-colors" size={18} />
                 <input 
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   className="w-full bg-card-bg border border-white/10 rounded-xl py-3 pl-12 pr-12 text-white placeholder-gray-600 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all outline-none"
                   placeholder="••••••••"
+                  required
                 />
                 <button 
                   type="button"
@@ -75,13 +105,14 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Buttons */}
-            <button className="w-full bg-primary text-main-bg font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-[0_0_20px_rgba(163,255,18,0.2)] transition-all transform active:scale-95">
-              Login to Account
+            {error && <p role="alert" className="rounded-lg border border-red-400/30 bg-red-400/10 px-4 py-3 text-sm text-red-300">{error}</p>}
+
+            <button disabled={isSubmitting} className="w-full bg-primary text-main-bg font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-[0_0_20px_rgba(163,255,18,0.2)] transition-all transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-70">
+              {isSubmitting ? "Signing in..." : "Login to Account"}
             </button>
 
             <p className="text-center text-sm text-gray-400">
-              Don't have an account? {" "}
+              Don&apos;t have an account? {" "}
               <Link href="/register" className="text-primary font-bold hover:underline">Register</Link>
             </p>
           </form>
