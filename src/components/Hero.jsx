@@ -107,8 +107,8 @@ export default function Hero() {
                     <MapPin size={20} />
                   </div>
                   <div>
-                    <h4 className="text-white font-semibold text-sm">Banasree</h4>
-                    <p className="text-secondary-text text-xs">Khilgaon, Dhaka City</p>
+                    <h4 className="text-white font-semibold text-sm">London</h4>
+                    <p className="text-secondary-text text-xs">London, United Kingdom</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1 bg-white/5 border border-white/10 px-2 py-1 rounded-md">

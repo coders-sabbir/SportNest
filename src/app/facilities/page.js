@@ -199,7 +199,6 @@ export default function AllFacilitiesPage() {
         )}
       </div>
 
-// Modal for Booking
       {isModalOpen && selectedFacility && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-[#FFFFFF] w-full max-w-md rounded-2xl p-6 relative shadow-2xl transform transition-all">

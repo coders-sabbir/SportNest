@@ -20,8 +20,8 @@ export default function Footer() {
 
   const contactInfo = [
     { icon: <Mail size={16} />, text: "support@sportnest.com", label: "Email Us" },
-    { icon: <Phone size={16} />, text: "+88 0111 2345678", label: "Call Us" },
-    { icon: <MapPin size={16} />, text: "Banasree, Dhaka", label: "Our Location" },
+    { icon: <Phone size={16} />, text: "+44 111 2345678", label: "Call Us" },
+    { icon: <MapPin size={16} />, text: "London, United Kingdom", label: "Our Location" },
     { icon: <Clock size={16} />, text: "Mon - Sun: 6:00 AM - 12:00 AM", label: "Working Hours" },
   ];
 
